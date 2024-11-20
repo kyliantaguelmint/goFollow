@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .album-list {
+            margin-top: 20px;
+        }
+        .album {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Album Manager</h1>
+
+<h2>Add New Album</h2>
+<form id="album-form">
+    <input type="text" id="title" placeholder="Title" required>
+    <input type="text" id="artist" placeholder="Artist" required>
+    <input type="number" id="price" placeholder="Price" step="0.01" required>
+    <button type="submit">Add Album</button>
+</form>
+
+<div class="error" id="error-message"></div>
+
+<h2>Albums List</h2>
+<div class="album-list" id="album-list"></div>
+
+<script>
+    const form = document.getElementById('album-form');
+    const albumList = document.getElementById('album-list');
+    const errorMessage = document.getElementById('error-message');
+
+    async function fetchAlbums() {
+        try {
+            const response = await fetch('http://localhost:8080/albums');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const albums = await response.json();
+            albumList.innerHTML = '';
+
+            albums.forEach(album => {
+                const albumDiv = document.createElement('div');
+                albumDiv.className = 'album';
+                albumDiv.innerHTML = `
+                    <strong>${album.title}</strong><br>
+                    Artist: ${album.artist}<br>
+                    Price: $${album.price.toFixed(2)}<br>
+                `;
+                albumList.appendChild(albumDiv);
+            });
+        } catch (error) {
+            console.error('Error fetching albums:', error);
+            errorMessage.textContent = 'Failed to fetch albums: ' + error.message;
+        }
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const title = document.getElementById('title').value;
+        const artist = document.getElementById('artist').value;
+        const price = parseFloat(document.getElementById('price').value);
+
+        const newAlbum = { title, artist, price };
+
+        try {
+            const response = await fetch('http://localhost:8080/albums', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newAlbum)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            form.reset();
+            errorMessage.textContent = '';
+            fetchAlbums();
+        } catch (error) {
+            console.error('Error adding album:', error);
+            errorMessage.textContent = 'Failed to add album: ' + error.message;
+        }
+    });
+    fetchAlbums();
+</script>
+
+</body>
+</html>
